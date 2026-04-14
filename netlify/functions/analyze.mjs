@@ -37,7 +37,9 @@ Returnera ENDAST JSON, inget annat:
 
 {"url":"${url}","companyName":"${companyName || url}","pageType":"${pageType}","analyzedAt":"${new Date().toISOString().slice(0,10)}","overallScore":0,"complianceStatus":"Hög risk","summary":{"criticalCount":0,"warningCount":0,"passCount":0},"issues":[{"severity":"critical","name":"","wcagCriteria":"","businessImpact":"","technicalFix":"","effort":"low"}],"actionPlan":{"phase1":{"label":"Omedelbart (vecka 1-2)","items":[]},"phase2":{"label":"Kort sikt (månad 1)","items":[]},"phase3":{"label":"Löpande underhåll","items":[]}},"complianceNote":""}
 
-Ge 8 issues (3 critical, 3 warning, 2 pass). Fokus: alt-texter, kontrast, tangentbord, checkout, etiketter, tillgänglighetsredogörelse, fokusring, rubriker. Var kortfattad men konkret.`;
+Ge 8 issues (3 critical, 3 warning, 2 pass). Fokus: alt-texter, kontrast, tangentbord, checkout, etiketter, fokusring, rubriker. Var kortfattad men konkret.
+
+VIKTIGT: Du besöker INTE sajten — du gör en indikativ analys baserad på vanliga brister för denna typ av e-handel. Skriv därför ALDRIG "saknas" eller "finns inte" om specifika element. Använd istället formuleringar som "Bör kontrolleras och säkerställas", "Vanlig brist som bör verifieras", "Kontrollera att...". Detta gör rapporten ärlig och trovärdig för kunden.`;
 
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -206,6 +208,11 @@ function buildReportHtml(d) {
   <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:20px;margin-bottom:32px">
     <strong style="color:#dc2626">⚖ Juridisk status:</strong>
     <span style="font-size:13px;color:#6b7280;margin-left:6px">${d.complianceNote}</span>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px 20px;margin-bottom:24px;font-size:13px;color:#92400e">
+    <strong>⚠ Om denna rapport:</strong> Detta är en <strong>indikativ AI-analys</strong> baserad på vanliga tillgänglighetsbrister för denna typ av e-handel — inte en teknisk skanning av den faktiska webbplatsen. Varje punkt bör verifieras manuellt innan åtgärd. För en fullständig juridisk revision rekommenderas en manuell genomgång med skärmläsare (VoiceOver/NVDA) och verktyg som axe DevTools eller WAVE.
   </div>
 
   <!-- FOOTER -->
