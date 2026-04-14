@@ -342,7 +342,7 @@
         Få en gratis rapport med prioriterad åtgärdslista — direkt i din inkorg.
       </p>
 
-      <div class="form-card">
+      <div class="form-card" id="formCard">
 
         <div class="field-row">
           <div class="field">
@@ -360,30 +360,31 @@
           <input class="field-input" id="email" type="email" placeholder="du@foretag.se" required>
         </div>
 
-        <div class="field">
-          <label class="field-label">Fokusera analysen på</label>
-          <div class="page-pills">
-            <div class="pill active" onclick="selectPill(this)">Startsida</div>
-            <div class="pill" onclick="selectPill(this)">Produktsida</div>
-            <div class="pill" onclick="selectPill(this)">Kassaflöde (checkout)</div>
-            <div class="pill" onclick="selectPill(this)">Kategorisida</div>
-            <div class="pill" onclick="selectPill(this)">Kundkonto</div>
-          </div>
-        </div>
-
         <button class="submit-btn" id="submitBtn" onclick="submitForm()">
           Analysera min e-handel gratis →
         </button>
 
-        <div class="status-box loading" id="loading">
-          <div class="spinner"></div>
-          <span id="loadingText">Analyserar mot WCAG 2.1 AA...</span>
-        </div>
-
-        <div class="status-box success" id="success"></div>
         <div class="status-box error" id="errorBox"></div>
 
         <p class="form-note">Rapporten skickas inom ~30 sekunder · Inget konto krävs · Gratis</p>
+      </div>
+
+      <!-- LOADING SCREEN -->
+      <div id="loadingScreen" style="display:none;text-align:center;padding:48px 24px">
+        <div style="width:64px;height:64px;border:3px solid rgba(74,222,128,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 24px"></div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--accent);margin-bottom:10px" id="loadingText">Analyserar mot WCAG 2.1 AA...</div>
+        <div style="font-size:13px;color:var(--muted)">Det tar ungefär 15–20 sekunder — häng kvar!</div>
+      </div>
+
+      <!-- SUCCESS SCREEN -->
+      <div id="successScreen" style="display:none;text-align:center;padding:48px 24px">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(74,222,128,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px">✓</div>
+        <h2 style="font-family:var(--serif);font-size:30px;margin-bottom:12px">Rapporten är på väg!</h2>
+        <p style="color:var(--muted);font-size:15px;margin-bottom:6px" id="successEmail"></p>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:32px">Kolla skräpposten om den inte dyker upp inom några minuter.</p>
+        <div id="successScore" style="display:inline-flex;gap:32px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 36px;margin-bottom:32px;flex-wrap:wrap;justify-content:center"></div>
+        <br>
+        <button onclick="resetForm()" style="background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:12px;padding:10px 20px;border-radius:3px;cursor:pointer;letter-spacing:.05em;margin-top:12px">← Analysera en annan sajt</button>
       </div>
 
       <div class="proof">
@@ -403,92 +404,91 @@
 </div>
 
 <script>
-function selectPill(el) {
-  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-}
-
 const loadingSteps = [
-  'Hämtar sidinformation...',
   'Analyserar mot WCAG 2.1 AA...',
   'Identifierar e-handelsspecifika krav...',
   'Beräknar juridisk riskprofil...',
-  'Sammanställer rapport...'
+  'Sammanställer rapport och åtgärdslista...',
+  'Skickar till din inkorg...'
 ];
+
+function showSection(id) {
+  ['formCard','loadingScreen','successScreen'].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.style.display = s === id ? (id === 'formCard' ? 'block' : 'block') : 'none';
+  });
+}
 
 async function submitForm() {
   const url = document.getElementById('url').value.trim();
   const email = document.getElementById('email').value.trim();
   const company = document.getElementById('company').value.trim();
-  const pageType = document.querySelector('.pill.active')?.textContent || 'Startsida';
 
-  if (!url || !email) {
-    showError('Fyll i URL och e-postadress.');
-    return;
-  }
+  if (!url || !email) { showError('Fyll i URL och e-postadress.'); return; }
+  if (!url.startsWith('http')) { showError('URL måste börja med https://'); return; }
 
-  if (!url.startsWith('http')) {
-    showError('URL måste börja med https://');
-    return;
-  }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  hideAll();
-  document.getElementById('loading').classList.add('loading');
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'block';
+  document.getElementById('successScreen').style.display = 'none';
 
   let step = 0;
   const stepTimer = setInterval(() => {
     if (step < loadingSteps.length) {
       document.getElementById('loadingText').textContent = loadingSteps[step++];
     }
-  }, 5000);
+  }, 4000);
 
   try {
     const res = await fetch('/.netlify/functions/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, email, pageType, companyName: company })
+      body: JSON.stringify({ url, email, pageType: 'Startsida', companyName: company })
     });
 
     const data = await res.json();
     clearInterval(stepTimer);
-    hideAll();
 
     if (res.ok && data.success) {
-      const successEl = document.getElementById('success');
-      successEl.innerHTML = `
-        <div style="font-size:24px;margin-bottom:8px">✓</div>
-        <strong>Rapporten är skickad!</strong><br>
-        <span style="font-size:13px;opacity:.8">Kolla ${email} — den borde vara framme inom en minut.</span><br>
-        <span style="font-size:12px;opacity:.6;margin-top:8px;display:block">Score: ${data.score}/100 · ${data.criticalCount} kritiska brister hittades</span>
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+      document.getElementById('successEmail').textContent = 'Rapporten är skickad till ' + email;
+      document.getElementById('successScore').innerHTML = `
+        <div style="text-align:center">
+          <div style="font-size:36px;font-weight:700;color:${data.score >= 70 ? '#4ade80' : data.score >= 40 ? '#f5a842' : '#f87171'}">${data.score}</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Score</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:36px;font-weight:700;color:#f87171">${data.criticalCount}</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Kritiska brister</div>
+        </div>
       `;
-      successEl.style.display = 'block';
+      document.getElementById('successScreen').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('formCard').style.display = 'block';
       showError(data.error || 'Något gick fel. Försök igen.');
     }
   } catch (err) {
     clearInterval(stepTimer);
-    hideAll();
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('formCard').style.display = 'block';
     showError('Nätverksfel — kontrollera din anslutning och försök igen.');
-  } finally {
-    btn.disabled = false;
   }
 }
 
-function hideAll() {
-  ['loading','success','errorBox'].forEach(id => {
-    const el = document.getElementById(id);
-    el.style.display = 'none';
-    el.className = 'status-box';
-  });
+function resetForm() {
+  document.getElementById('successScreen').style.display = 'none';
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('url').value = '';
+  document.getElementById('email').value = '';
+  document.getElementById('company').value = '';
 }
 
 function showError(msg) {
   const el = document.getElementById('errorBox');
   el.textContent = '⚠ ' + msg;
   el.style.display = 'block';
-  el.className = 'status-box error';
 }
 </script>
 </body>
