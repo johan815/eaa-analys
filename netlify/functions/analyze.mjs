@@ -5,6 +5,14 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const handler = async (event) => {
+// TEST - ta bort efter felsökning
+console.log("Function started, testing Anthropic connection...");
+try {
+  const testRes = await fetch("https://api.anthropic.com", { method: "HEAD" });
+  console.log("Anthropic reachable:", testRes.status);
+} catch(e) {
+  console.log("Anthropic BLOCKED:", e.message);
+}
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
   }
