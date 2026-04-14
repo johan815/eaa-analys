@@ -5,14 +5,6 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const handler = async (event) => {
-// TEST - ta bort efter felsökning
-console.log("Function started, testing Anthropic connection...");
-try {
-  const testRes = await fetch("https://api.anthropic.com", { method: "HEAD" });
-  console.log("Anthropic reachable:", testRes.status);
-} catch(e) {
-  console.log("Anthropic BLOCKED:", e.message);
-}
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
   }
@@ -36,47 +28,20 @@ try {
   // --- 1. Kör Claude-analys ---
   let analysis;
   try {
-    const prompt = `Du är expert på webbtillgänglighet (WCAG 2.1 AA) och EU:s tillgänglighetslag EAA / Lag (2023:254) om vissa produkters och tjänsters tillgänglighet.
+    const prompt = `Du är expert på WCAG 2.1 AA och EU:s tillgänglighetslag EAA (Lag 2023:254).
 
-Analysera denna e-handelswebbplats: ${url}
-Sidtyp att fokusera på: ${pageType}
-Företagsnamn: ${companyName || url}
+Analysera e-handeln: ${url} (${pageType})
+Företag: ${companyName || url}
 
-Generera en detaljerad tillgänglighetsanalys. Returnera ENDAST ett JSON-objekt, absolut ingenting utanför JSON-blocket.
+Returnera ENDAST JSON, inget annat:
 
-{
-  "url": "${url}",
-  "companyName": "${companyName || url}",
-  "pageType": "${pageType}",
-  "analyzedAt": "YYYY-MM-DD",
-  "overallScore": <0-100>,
-  "complianceStatus": "Hög risk" | "Medelhög risk" | "Låg risk",
-  "summary": { "criticalCount": <n>, "warningCount": <n>, "passCount": <n> },
-  "issues": [
-    {
-      "severity": "critical" | "warning" | "pass",
-      "name": "Kort namn",
-      "wcagCriteria": "t.ex. WCAG 1.1.1 (A)",
-      "businessImpact": "Affärskonsekvens för e-handlaren (2-3 meningar)",
-      "technicalFix": "Konkret teknisk instruktion för en webbutvecklare (2-3 meningar)",
-      "effort": "low" | "medium" | "high"
-    }
-  ],
-  "actionPlan": {
-    "phase1": { "label": "Omedelbart (vecka 1-2)", "items": ["..."] },
-    "phase2": { "label": "Kort sikt (månad 1)", "items": ["..."] },
-    "phase3": { "label": "Löpande underhåll", "items": ["..."] }
-  },
-  "complianceNote": "Specifik notering om lagstatus för just denna typ av e-handel"
-}
+{"url":"${url}","companyName":"${companyName || url}","pageType":"${pageType}","analyzedAt":"${new Date().toISOString().slice(0,10)}","overallScore":0,"complianceStatus":"Hög risk","summary":{"criticalCount":0,"warningCount":0,"passCount":0},"issues":[{"severity":"critical","name":"","wcagCriteria":"","businessImpact":"","technicalFix":"","effort":"low"}],"actionPlan":{"phase1":{"label":"Omedelbart (vecka 1-2)","items":[]},"phase2":{"label":"Kort sikt (månad 1)","items":[]},"phase3":{"label":"Löpande underhåll","items":[]}},"complianceNote":""}
 
-Ge 10-12 issues totalt med en bra mix av critical (4-5st), warning (3-4st) och pass (2-3st).
-Fokusera på vanliga e-handelsbrister: alt-texter, kontrastförhållanden, tangentbordsnavigering, checkout-tillgänglighet, formuläretiketter, tillgänglighetsredogörelse, skärmläsarkompatibilitet, felhantering, rubrikstruktur, fokusindikatorer.
-Var specifik och praktisk i dina råd — inte generiska.`;
+Ge 8 issues (3 critical, 3 warning, 2 pass). Fokus: alt-texter, kontrast, tangentbord, checkout, etiketter, tillgänglighetsredogörelse, fokusring, rubriker. Var kortfattad men konkret.`;
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2000,
       messages: [{ role: "user", content: prompt }],
     });
 
