@@ -1,0 +1,12 @@
+{
+  "name": "eaa-tillganglighetsanalys",
+  "version": "1.0.0",
+  "description": "EAA tillgänglighetsanalys för e-handel — DigitalPT",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "resend": "^3.2.0"
+  }
+}
